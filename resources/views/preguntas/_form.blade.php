@@ -104,6 +104,12 @@
     function actualizarVisibilidad() {
         const esOpcionMultiple = tipoSelect.value === 'opcion_multiple';
         seccionOpciones.style.display = esOpcionMultiple ? 'block' : 'none';
+        // disabled, no solo oculto: un input oculto con CSS igual se manda
+        // en el POST, y el backend terminaba exigiendo texto de opciones
+        // aunque la pregunta fuera de tipo "abierta".
+        listaOpciones.querySelectorAll('input').forEach((el) => {
+            el.disabled = !esOpcionMultiple;
+        });
         listaOpciones.querySelectorAll('input[name="correcta"]').forEach((el) => {
             el.required = esOpcionMultiple;
         });

@@ -23,7 +23,10 @@ class PreguntaRequest extends FormRequest
             'tiempo_seg' => ['nullable', 'integer', 'min:1'],
             'puntaje' => ['required', 'numeric', 'min:0'],
             'opciones' => ['required_if:tipo,'.TipoPregunta::OpcionMultiple->value, 'array'],
-            'opciones.*.texto' => ['required_with:opciones', 'string', 'max:255'],
+            // nullable: el middleware ConvertEmptyStringsToNull vuelve null los
+            // campos de opciones que llegan vacíos en una pregunta "abierta";
+            // sin esto, 'string' los rechazaba aunque no sean obligatorios acá.
+            'opciones.*.texto' => ['nullable', 'required_if:tipo,'.TipoPregunta::OpcionMultiple->value, 'string', 'max:255'],
             'correcta' => ['nullable', 'string'],
         ];
     }
