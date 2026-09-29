@@ -28,6 +28,9 @@
                     @default
                         <span class="badge badge-abierta">En curso</span>
                 @endswitch
+                @if ($intento->salidas_pestana > 0)
+                    <span class="badge badge-abierta">Salió de la pestaña {{ $intento->salidas_pestana }} vez/veces</span>
+                @endif
                 <span class="dato">Inicio: {{ $intento->inicio?->format('d/m/Y H:i') ?? '—' }}</span>
                 <span class="dato">Fin: {{ $intento->fin?->format('d/m/Y H:i') ?? '—' }}</span>
             </div>

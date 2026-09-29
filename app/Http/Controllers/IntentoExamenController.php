@@ -18,6 +18,9 @@ use Illuminate\View\View;
 
 class IntentoExamenController extends Controller
 {
+    /** Salidas de pestaña toleradas antes de entregar el examen automáticamente. */
+    public const MAX_SALIDAS_PESTANA = 3;
+
     public function index(Request $request): View
     {
         $usuario = $request->user();
@@ -270,6 +273,35 @@ class IntentoExamenController extends Controller
         }
 
         return response()->json(['guardado' => true]);
+    }
+
+    /**
+     * Registra que el alumno salió de la pestaña/ventana del examen. Al
+     * llegar a MAX_SALIDAS_PESTANA el intento se entrega solo con lo ya
+     * guardado.
+     */
+    public function registrarSalidaPestana(Request $request, IntentoExamen $intento): JsonResponse
+    {
+        abort_unless($intento->alumno_id === $request->user()->id, 403);
+
+        if ($intento->estado !== EstadoIntento::EnCurso) {
+            return response()->json(['salidas' => $intento->salidas_pestana, 'entregado' => true], 409);
+        }
+
+        $intento->increment('salidas_pestana');
+        $intento->refresh();
+
+        $entregado = $intento->salidas_pestana >= self::MAX_SALIDAS_PESTANA;
+
+        if ($entregado) {
+            $this->finalizar($intento);
+        }
+
+        return response()->json([
+            'salidas' => $intento->salidas_pestana,
+            'maximo' => self::MAX_SALIDAS_PESTANA,
+            'entregado' => $entregado,
+        ]);
     }
 
     public function entregar(Request $request, IntentoExamen $intento): RedirectResponse

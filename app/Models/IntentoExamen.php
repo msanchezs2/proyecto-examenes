@@ -16,7 +16,7 @@ class IntentoExamen extends Model
 
     protected $fillable = [
         'alumno_id', 'examen_id', 'inicio', 'fin',
-        'estado', 'calificacion_parcial', 'calificacion_final',
+        'estado', 'salidas_pestana', 'calificacion_parcial', 'calificacion_final',
         'orden_preguntas', 'orden_opciones',
     ];
 

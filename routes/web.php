@@ -79,5 +79,6 @@ Route::middleware(['auth', 'alumno'])->group(function () {
         ->whereNumber('posicion')
         ->name('intentos.pregunta');
     Route::patch('/intentos/{intento}/respuestas/{pregunta}', [IntentoExamenController::class, 'guardarRespuesta'])->name('intentos.guardarRespuesta');
+    Route::post('/intentos/{intento}/salida-pestana', [IntentoExamenController::class, 'registrarSalidaPestana'])->name('intentos.salidaPestana');
     Route::post('/intentos/{intento}/entregar', [IntentoExamenController::class, 'entregar'])->name('intentos.entregar');
 });

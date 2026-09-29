@@ -64,6 +64,92 @@
         </div>
     </form>
 
+    <div id="aviso-salida" role="alert" hidden style="margin-top:16px; padding:12px 16px; border-radius:8px; border:1px solid #d97706; background:#fef3c7; color:#78350f;"></div>
+
+    <style nonce="{{ Vite::cspNonce() }}">
+        #pregunta .enunciado,
+        #pregunta .opcion-card {
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
+        @media print {
+            body * { display: none !important; }
+        }
+    </style>
+
+    <script nonce="{{ Vite::cspNonce() }}">
+        (function () {
+            // --- anti-copia: disuasión, no garantía (el alumno controla su navegador) ---
+            ['copy', 'cut', 'selectstart', 'dragstart', 'contextmenu'].forEach(function (tipo) {
+                document.addEventListener(tipo, function (evento) {
+                    const enCampoEscritura = evento.target.closest && evento.target.closest('textarea, input');
+                    if (tipo === 'contextmenu' || !enCampoEscritura) {
+                        evento.preventDefault();
+                    }
+                });
+            });
+
+            document.addEventListener('keydown', function (evento) {
+                const tecla = evento.key.toLowerCase();
+                const enCampoEscritura = evento.target.closest && evento.target.closest('textarea, input');
+                const conControl = evento.ctrlKey || evento.metaKey;
+
+                const bloqueado =
+                    evento.key === 'F12' ||
+                    evento.key === 'PrintScreen' ||
+                    (conControl && evento.shiftKey && ['i', 'j', 'c'].includes(tecla)) ||
+                    (conControl && ['u', 's', 'p'].includes(tecla)) ||
+                    (conControl && ['c', 'x', 'a'].includes(tecla) && !enCampoEscritura);
+
+                if (bloqueado) {
+                    evento.preventDefault();
+                    if (evento.key === 'PrintScreen' && navigator.clipboard) {
+                        navigator.clipboard.writeText('').catch(function () {});
+                    }
+                }
+            });
+
+            // --- salidas de pestaña: se registran en el servidor; al llegar al máximo se entrega solo ---
+            const salidaUrl = "{{ route('intentos.salidaPestana', $intento) }}";
+            const avisoSalida = document.getElementById('aviso-salida');
+            const tokenCsrf = document.querySelector('meta[name="csrf-token"]').content;
+            let fuera = false;
+
+            function registrarSalida() {
+                if (fuera) return;
+                fuera = true;
+
+                fetch(salidaUrl, {
+                    method: 'POST',
+                    headers: {'X-CSRF-TOKEN': tokenCsrf, 'Accept': 'application/json'},
+                    keepalive: true,
+                })
+                    .then(function (respuesta) { return respuesta.json(); })
+                    .then(function (datos) {
+                        if (datos.entregado) {
+                            window.location.href = "{{ route('intentos.index') }}";
+                            return;
+                        }
+                        avisoSalida.hidden = false;
+                        avisoSalida.textContent = 'Saliste de la pestaña del examen (' + datos.salidas + ' de ' + datos.maximo
+                            + '). Al llegar a ' + datos.maximo + ' el examen se entrega automáticamente.';
+                    })
+                    .catch(function () {});
+            }
+
+            document.addEventListener('visibilitychange', function () {
+                if (document.hidden) {
+                    registrarSalida();
+                } else {
+                    fuera = false;
+                }
+            });
+            window.addEventListener('blur', registrarSalida);
+            window.addEventListener('focus', function () { fuera = false; });
+        })();
+    </script>
+
     <script nonce="{{ Vite::cspNonce() }}">
         (function () {
             const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
