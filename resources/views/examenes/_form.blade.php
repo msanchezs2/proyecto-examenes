@@ -31,7 +31,7 @@
 
     <div class="fila">
         <label>
-            Apertura
+            Apertura <span class="dato">(hora de Ciudad de México)</span>
             <input
                 type="datetime-local"
                 name="apertura"
@@ -40,7 +40,7 @@
             >
         </label>
         <label>
-            Cierre
+            Cierre <span class="dato">(hora de Ciudad de México)</span>
             <input
                 type="datetime-local"
                 name="cierre"
