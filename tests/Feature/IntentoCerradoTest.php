@@ -143,6 +143,28 @@ class IntentoCerradoTest extends TestCase
         );
     }
 
+    public function test_el_comando_reinicia_el_reloj_de_un_intento_en_curso_ya_vencido(): void
+    {
+        $this->intento->update([
+            'inicio' => now()->subMinutes(60),
+            'fin' => null,
+            'estado' => EstadoIntento::EnCurso,
+            'salidas_pestana' => 0,
+        ]);
+
+        $this->artisan('intentos:reabrir-por-salidas', [
+            'examen' => $this->examen->id,
+            '--intentos' => (string) $this->intento->id,
+            '--minutos' => 30,
+            '--aplicar' => true,
+        ])->assertSuccessful();
+
+        $intento = $this->intento->fresh();
+
+        $this->assertSame(EstadoIntento::EnCurso, $intento->estado);
+        $this->assertEqualsWithDelta(now()->getTimestamp(), $intento->inicio->getTimestamp(), 5);
+    }
+
     public function test_el_comando_reabre_el_intento_conservando_el_tiempo_restante(): void
     {
         $this->artisan('intentos:reabrir-por-salidas', ['examen' => $this->examen->id, '--aplicar' => true])

@@ -24,9 +24,9 @@ class ReabrirIntentosPorSalidasPestana extends Command
 
         $afectados = IntentoExamen::with('examen', 'alumno')
             ->where('examen_id', $this->argument('examen'))
-            ->where('estado', '!=', EstadoIntento::EnCurso)
             ->when($ids, fn ($query) => $query->whereIn('id', $ids))
             ->when(! $ids, fn ($query) => $query
+                ->where('estado', '!=', EstadoIntento::EnCurso)
                 ->where('salidas_pestana', '>=', IntentoExamenController::MAX_SALIDAS_PESTANA))
             ->get()
             ->when(! $ids, fn ($intentos) => $intentos->filter(fn (IntentoExamen $intento) => $intento->fin->lt(
@@ -40,10 +40,11 @@ class ReabrirIntentosPorSalidasPestana extends Command
         }
 
         $this->table(
-            ['Intento', 'Alumno', 'Inicio', 'Fin', 'Salidas'],
+            ['Intento', 'Alumno', 'Estado', 'Inicio', 'Fin', 'Salidas'],
             $afectados->map(fn (IntentoExamen $intento) => [
                 $intento->id,
                 $intento->alumno?->email ?? $intento->alumno_id,
+                $intento->estado->value,
                 $intento->inicio,
                 $intento->fin,
                 $intento->salidas_pestana,
@@ -79,7 +80,7 @@ class ReabrirIntentosPorSalidasPestana extends Command
     private function reabrir(IntentoExamen $intento, ?int $minutos = null): void
     {
         DB::transaction(function () use ($intento, $minutos) {
-            $segundosCerrado = (int) $intento->fin->diffInSeconds(now());
+            $segundosCerrado = $intento->fin ? (int) $intento->fin->diffInSeconds(now()) : 0;
 
             $nuevoInicio = $minutos !== null
                 ? now()->subMinutes(max(0, $intento->examen->duracion_min - $minutos))
