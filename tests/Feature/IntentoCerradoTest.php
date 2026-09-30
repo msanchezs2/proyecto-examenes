@@ -118,6 +118,31 @@ class IntentoCerradoTest extends TestCase
         $this->assertSame(EstadoIntento::Calificado, $this->intento->fresh()->estado);
     }
 
+    public function test_el_comando_reabre_por_id_un_intento_ya_vencido_con_tiempo_nuevo(): void
+    {
+        $this->intento->update([
+            'inicio' => now()->subMinutes(20),
+            'fin' => now()->subMinutes(2),
+            'salidas_pestana' => 0,
+        ]);
+
+        $this->artisan('intentos:reabrir-por-salidas', [
+            'examen' => $this->examen->id,
+            '--intentos' => (string) $this->intento->id,
+            '--minutos' => 10,
+            '--aplicar' => true,
+        ])->assertSuccessful();
+
+        $intento = $this->intento->fresh();
+
+        $this->assertSame(EstadoIntento::EnCurso, $intento->estado);
+        $this->assertEqualsWithDelta(
+            now()->subMinutes(20)->getTimestamp(),
+            $intento->inicio->getTimestamp(),
+            5
+        );
+    }
+
     public function test_el_comando_reabre_el_intento_conservando_el_tiempo_restante(): void
     {
         $this->artisan('intentos:reabrir-por-salidas', ['examen' => $this->examen->id, '--aplicar' => true])
