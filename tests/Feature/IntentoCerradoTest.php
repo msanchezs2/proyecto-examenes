@@ -6,6 +6,7 @@ use App\Enums\EstadoIntento;
 use App\Enums\RolUsuario;
 use App\Http\Controllers\IntentoExamenController;
 use App\Models\Examen;
+use App\Models\Grupo;
 use App\Models\IntentoExamen;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -78,6 +79,35 @@ class IntentoCerradoTest extends TestCase
         $this->actingAs($otro)
             ->get(route('intentos.pregunta', [$this->intento, 1]))
             ->assertForbidden();
+    }
+
+    public function test_un_examen_cerrado_sigue_listado_si_hay_intento_en_curso(): void
+    {
+        $this->asignarExamenCerradoAlAlumno();
+        $this->intento->update(['estado' => EstadoIntento::EnCurso, 'fin' => null]);
+
+        $this->actingAs($this->alumno)
+            ->get(route('intentos.index'))
+            ->assertOk()
+            ->assertSee('Continuar intento en curso');
+    }
+
+    public function test_un_examen_cerrado_sin_intento_en_curso_no_se_lista(): void
+    {
+        $this->asignarExamenCerradoAlAlumno();
+
+        $this->actingAs($this->alumno)
+            ->get(route('intentos.index'))
+            ->assertOk()
+            ->assertSee('No tenés exámenes disponibles');
+    }
+
+    private function asignarExamenCerradoAlAlumno(): void
+    {
+        $grupo = Grupo::create(['nombre' => 'Grupo A', 'ciclo' => '2026-1', 'administrado_por' => $this->examen->creado_por]);
+        $grupo->alumnos()->attach($this->alumno->id);
+        $this->examen->grupos()->attach($grupo->id);
+        $this->examen->update(['cierre' => now()->subHour()]);
     }
 
     public function test_el_comando_solo_lista_sin_aplicar(): void

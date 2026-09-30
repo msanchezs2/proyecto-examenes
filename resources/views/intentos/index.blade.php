@@ -34,8 +34,13 @@
                     <span class="badge badge-tema">Programado</span>
                     <span class="dato">Abre {{ $examen->apertura->format('d/m/Y H:i') }}</span>
                 @else
-                    <span class="dato">Cierra {{ $examen->cierre->format('d/m/Y H:i') }}</span>
-                    @if (now()->diffInHours($examen->cierre) <= 48)
+                    @if ($examen->cierre->isPast())
+                        <span class="badge badge-tema">Cerrado</span>
+                        <span class="dato">Cerró {{ $examen->cierre->format('d/m/Y H:i') }}</span>
+                    @else
+                        <span class="dato">Cierra {{ $examen->cierre->format('d/m/Y H:i') }}</span>
+                    @endif
+                    @if ($examen->cierre->isFuture() && now()->diffInHours($examen->cierre) <= 48)
                         <span class="badge badge-abierta">Cierra pronto</span>
                     @endif
                 @endif

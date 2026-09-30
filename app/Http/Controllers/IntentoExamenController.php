@@ -27,7 +27,13 @@ class IntentoExamenController extends Controller
         $grupoIds = $usuario->grupos()->pluck('grupos.id');
 
         $examenes = Examen::whereHas('grupos', fn ($query) => $query->whereIn('grupos.id', $grupoIds))
-            ->where('cierre', '>=', now())
+            // Un intento en curso se puede terminar aunque el examen ya haya
+            // cerrado (p. ej. uno reabierto): sin esto desaparece el botón "Continuar".
+            ->where(fn ($query) => $query
+                ->where('cierre', '>=', now())
+                ->orWhereHas('intentos', fn ($intentos) => $intentos
+                    ->where('alumno_id', $usuario->id)
+                    ->where('estado', EstadoIntento::EnCurso)))
             ->withCount(['intentos as intentos_usados' => fn ($query) => $query->where('alumno_id', $usuario->id)])
             ->orderBy('apertura')
             ->get()
