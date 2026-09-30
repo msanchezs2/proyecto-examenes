@@ -128,7 +128,10 @@ class IntentoExamenController extends Controller
     public function responder(Request $request, IntentoExamen $intento): RedirectResponse
     {
         abort_unless($intento->alumno_id === $request->user()->id, 403);
-        abort_unless($intento->estado === EstadoIntento::EnCurso, 404);
+
+        if ($intento->estado !== EstadoIntento::EnCurso) {
+            return $this->redirigirIntentoCerrado();
+        }
 
         $intento->loadMissing('examen');
 
@@ -155,7 +158,10 @@ class IntentoExamenController extends Controller
     public function mostrarPregunta(Request $request, IntentoExamen $intento, int $posicion): View|RedirectResponse
     {
         abort_unless($intento->alumno_id === $request->user()->id, 403);
-        abort_unless($intento->estado === EstadoIntento::EnCurso, 404);
+
+        if ($intento->estado !== EstadoIntento::EnCurso) {
+            return $this->redirigirIntentoCerrado();
+        }
 
         $intento->loadMissing('examen');
 
@@ -307,11 +313,25 @@ class IntentoExamenController extends Controller
     public function entregar(Request $request, IntentoExamen $intento): RedirectResponse
     {
         abort_unless($intento->alumno_id === $request->user()->id, 403);
-        abort_unless($intento->estado === EstadoIntento::EnCurso, 404);
+
+        if ($intento->estado !== EstadoIntento::EnCurso) {
+            return $this->redirigirIntentoCerrado();
+        }
 
         $this->finalizar($intento);
 
         return redirect()->route('intentos.index')->with('status', 'Examen entregado.');
+    }
+
+    /**
+     * Un intento ya cerrado (entregado a mano, por tiempo o por salidas de
+     * pestaña) no es un "no encontrado": una petición rezagada o un doble
+     * clic no debe terminar en 404 sino de vuelta en "Mis exámenes".
+     */
+    private function redirigirIntentoCerrado(): RedirectResponse
+    {
+        return redirect()->route('intentos.index')
+            ->with('status', 'Este examen ya fue entregado: no se puede seguir respondiendo.');
     }
 
     /**

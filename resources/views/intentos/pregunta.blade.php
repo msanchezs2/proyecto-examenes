@@ -115,9 +115,21 @@
             const avisoSalida = document.getElementById('aviso-salida');
             const tokenCsrf = document.querySelector('meta[name="csrf-token"]').content;
             let fuera = false;
+            let navegando = false;
+
+            // Al cambiar de pregunta o entregar, el navegador descarga la página y
+            // (sobre todo en móviles/Safari) dispara "visibilitychange" oculto: eso
+            // no es una salida del alumno y no debe sumar al contador.
+            function marcarNavegacion() { navegando = true; }
+            window.addEventListener('pagehide', marcarNavegacion);
+            window.addEventListener('beforeunload', marcarNavegacion);
+            document.querySelectorAll('.nav-pregunta').forEach(function (enlace) {
+                enlace.addEventListener('click', marcarNavegacion);
+            });
+            document.getElementById('form-entregar').addEventListener('submit', marcarNavegacion);
 
             function registrarSalida() {
-                if (fuera) return;
+                if (fuera || navegando) return;
                 fuera = true;
 
                 fetch(salidaUrl, {
@@ -138,15 +150,16 @@
                     .catch(function () {});
             }
 
+            // Solo "visibilitychange": "blur" se dispara también con el teclado
+            // virtual, notificaciones o la barra de direcciones y generaba salidas falsas.
             document.addEventListener('visibilitychange', function () {
                 if (document.hidden) {
                     registrarSalida();
                 } else {
                     fuera = false;
+                    navegando = false;
                 }
             });
-            window.addEventListener('blur', registrarSalida);
-            window.addEventListener('focus', function () { fuera = false; });
         })();
     </script>
 
